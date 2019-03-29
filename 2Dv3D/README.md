@@ -26,7 +26,10 @@ cop_ncss17pH_h20_covarsc.txt: Training points for soil 1:1 H2O pH with environme
 
 cop_ncss17wLIMS_ec12_covarsc.txt: Training points for soil 1:2 H2O electrical conductivity with environmental covariates already extracted.
 
-Example maps for review produced from these scripts for the paper are available at the following repository:
+The USGS data release citation
+Nauman, T.W. and Duniway, M.C., 2019, Predictive maps of 2D and 3D surface soil properties and associated uncertainty for the Upper Colorado River Basin, USA: U.S. Geological Survey data release, https://doi.org/10.5066/P9YBAKC2.
+
+Beta maps used for peer review produced from these scripts for the paper are available at the following repository:
 
 Version 1: http://doi.org/10.5281/zenodo.1458273
 
