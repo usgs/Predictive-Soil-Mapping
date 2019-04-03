@@ -1,0 +1,57 @@
+CITATION INFORMATION
+
+Author: Travis W. Nauman
+Publication Date: 2019
+Software Title: QuantRFmodel_2D.R, QuantRFmodel_3D.R
+Form: R Scripts
+Publication Place: Flagstaff, AZ
+Publisher: U.S. Geological Survey
+Online link to software: http://dx.doi.org/10.5066/P9YBAKC2
+
+
+Larger Work Citation:
+Author(s): Travis Nauman; Michael Duniway
+Publication Date: 2019
+Publication Title: Relative prediction intervals reveal larger uncertainty in 3D approaches to predictive digital soil mapping of soil properties with legacy data
+Publication Form: journal, manuscript
+Publication Place: Amsterdam, The Netherlands
+Publisher: Elsevier
+Online link to larger work publication: https://doi.org/10.1016/j.geoderma.2019.03.037
+
+
+Software Description (Abstract): Files in this are empirical predictive soil property mapping applications workflows to make high resolution soil property maps. The file QuantRFmodel_2D.R is an R script that combines raster environmental data and field soil observations together into an predictive random forest interpolation model to map a given soil property. The '2D' portion of the title refers to the strategy of mapping properties at different soil depths using separate models. In contrast, the QuantRFmodel_3D.R script includes code to also map soil properties using a predictive interpolative model, but using a generalized framework that includes soil depth as a predictor enabling prediction at any depth with one model.  Both of these scripts include code to assess accuracy using a 10-fold cross validation and also convey model uncertainty using relative prediction intervals created using a quantile regression forest implementation of the more general random forest machine learning algorithm. The ".txt" files included provide the locations (Albers Equal Area nad83), laboratory soil property estimates, and extracted raster covariate values used for creating the various soil property maps used in analysis (pH, electrical conductivity, soil organic carbon, and fine + very fine sand content).  The environmental raster maps used in scripts are not included becuase of size (~250 GB), but can all be made from public data sources documented in this data release and the journal manuscript (Appendix Table A.1).
+
+
+Software Purpose: This software is aimed at advancing methods for creating predictive high resolution soil property maps. Two differing approaches are provided (2D and 3D) that are compared in analysis of uncertainty using new expanded interpretations of commmon prediction intervals. To do this, a relative prediction interval is created that enables direct comparison of uncertainty across models. Our results showed that 3D approaches, where all soil depths are predicted in one model, can introduce large amounts of uncertainty in models that can result in biased prediction accuracy.
+
+
+Required data: Soil observation estimates and locations are provided in ".txt" files, but not the large environmental raster files needed to predict models out into broader continuous maps. The raster files can be recreated from methods in manuscript and freely available data, and then used along with the provided R scripts to create new soil maps.
+
+
+Outputs: Scripts produce a number of maps related to the soil property being mapped (prediction value, Upper 95% Prediction Interval [PI], Lower 95% PI, relative prediction interval [RPI]) for any desired soil depth. The script also includes steps to tabular accuracy measures (Rsq, RMSE, prediction interval coverage probability [PICP]) from cross validation and several relative prediction interval summaries (average and median in study area and also in cross validation test instances). In addition, several plotting functions are included (1:1 accuracy plot, RPI versus validation residuals). Is it plausible or valid for these data to have negative raster cell values using the 3D processing approach (QuantRFmodel_3D.R script).
+
+
+Supplemental Information: This code was developed to helpcreate more detailed soil maps in the Upper Colorado River Basin for the Bureau of Land Management. This code and peer reviewed research paper is meant to provide the documentation for the underlying methods to develop maps for a more formal broad release of maps in future efforts. This R software script is specific to the data and modeling conducted and presented in the publication, Nauman, T.W. and Duniway, M.C., 2019, Relative prediction intervals reveal larger uncertainty in 3D approaches to predictive digital soil mapping of soil properties with legacy data, Elsevier (ScienceDirect online), https://doi.org/10.1016/j.geoderma.2019.03.037, and any other use of this R software script would be inappropriate. See 'Distribution liability' statements for more information.
+
+
+Point of Contact
+Contact Person: Travis W. Nauman
+Contact Organization: US Geological Survey, Southwest Biological Science Center
+Contact Address: 2290 SW Resource Blvd, Moab, UT, 84532
+Contact Voice: 928-556-7537
+Contact email: tnauman@usgs.gov
+
+
+How to access the software: R version 3.3.#; https://www.r-project.org/
+
+
+Software citation: R Core Team (2012). R: A language and environment for statistical computing. R Foundation for Statistical Computing, Vienna, Austria. ISBN 3-900051-07-0, URL http://www.R-project.org/
+
+
+DISTRIBUTION LIABILITY:
+
+Approved software disclaimer:
+This software has been approved for release by the U.S. Geological Survey (USGS). Although the software has been subjected to rigorous review, the USGS reserves the right to update the software as needed pursuant to further analysis and review. No warranty, expressed or implied, is made by the USGS or the U.S. Government as to the functionality of the software and related material nor shall the fact of release constitute any such warranty. Furthermore, the software is released on condition that neither the USGS nor the U.S. Government shall be held liable for any damages resulting from its authorized or unauthorized use.
+
+Technical Prerequisites:
+This software contains scripting code used with the R software environment for statistical computing and graphics. The user must have R statistical software installed to process the R software scripts.
