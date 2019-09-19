@@ -3,7 +3,7 @@ Documentation of project recreating soil property maps from conventional soil su
 
 This software is preliminary or provisional and is subject to revision. It is being provided to meet the need for timely best science. The software has not received final approval by the U.S. Geological Survey (USGS). No warranty, expressed or implied, is made by the USGS or the U.S. Government as to the functionality of the software and related material nor shall the fact of release constitute any such warranty. The software is provided on the condition that neither the USGS nor the U.S. Government shall be held liable for any damages resulting from the authorized or unauthorized use of the software.
 
-Repository for article: Nauman, T.W, Duniway, M.C.. In Preparation. Predictive reconstruction of soil survey property maps for field scale adaptive land management. For submission to: Soil Science Society of America Journal.
+Repository for article: Nauman, T.W, Duniway, M.C.. In Review. A hybrid approach for predictive soil property mapping using conventional soil survey data. Submitted to: Soil Science Society of America Journal.
 
 This repository documents code and data inputs used to create new soil property maps of the Upper Colorado River Basin (UCRB) using past soil survey field observations to recreate maps of specific soil properties at standard depths (0, 5, 15, 30, 60, 100, and 200 cm). Files are organized by soil property except materials that summarize all models.
 
