@@ -13,7 +13,7 @@ PerformanceSummarybyModel_repository_v2.xlsx: Table summarizing performance metr
 
 Separate Data repositories store the maps associated with the project and are located at the links below. Additional high resolution 1:1 accuracy plots are also available at these beta version repositories.
 
-http://doi.org/10.5281/zenodo.2551850 - Depth to top of root or water soil restrictive layer (resdept) soil maps 
+http://doi.org/10.5281/zenodo.2551849 - Depth to top of root or water soil restrictive layer (resdept) soil maps (updated 12/23/19) 
 
 http://doi.org/10.5281/zenodo.2551831 - Sodium adsorption ratio (sar) soil maps
 
