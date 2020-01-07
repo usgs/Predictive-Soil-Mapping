@@ -9,7 +9,7 @@ This repository documents code and data inputs used to create new soil property 
 
 Files in this folder:
 
-PerformanceSummarybyModel_repository_v2.xlsx: Table summarizing performance metrics for all models.
+PerformanceSummarybyModel_repository.xlsx: Table summarizing performance metrics for all models.
 
 Separate Data repositories store the maps associated with the project and are located at the links below. Additional high resolution 1:1 accuracy plots are also available at these beta version repositories.
 
