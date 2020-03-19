@@ -27,8 +27,8 @@ names(gbd_nonspatial) <- gdb_neat_deets[is.na(gdb_neat_deets$Geomtype), 'Name']
 fgdb <- "/home/tnaum/data/gSSURGO18/gSSURGO_CONUS.gdb"
 subset(ogrDrivers(), grepl("GDB", name))
 fc_list <- ogrListLayers(fgdb) # list layers
-#polys <- readOGR(fgdb, "MUPOLYGON") # Takes 24 hrs to load with SSURGO for all USA
-#polys.proj <- projection(polys)
+polys <- readOGR(fgdb, "MUPOLYGON") # Takes 24 hrs to load with SSURGO for all USA
+polys.proj <- projection(polys)
 ### Clip polys to study area ###########
 # Load map clip boundary (if needed) 
 setwd("/home/tnaum/Dropbox/USGS/BLM_projects/Utah_BLM_Salinity/Huc6_boundary")
@@ -67,7 +67,7 @@ shp.pts <- spTransform(shp.pts, polys.proj)
 pts.proj <- projection(shp.pts)
 ## Now clip points and check with visualization
 shp.pts <- shp.pts[polybound,]#clip by outer extent of all polybound features
-#save.image("~/data/gSSURGO18/UCRB_gSSURGO18_mupolys_nasis/UCRB__gSSURGO_mupolys_nasis_workspace.RData")
+save.image("~/data/gSSURGO18/UCRB_gSSURGO18_mupolys_nasis/UCRB__gSSURGO_mupolys_nasis_workspace.RData")
 ## Some cleanup to turn factos to characters to avoid subsetting issues in memory
 polys@data[] <- lapply(polys@data, function(x) if (is.factor(x)) as.character(x) else {x})
 horiz_comps[] <- lapply(horiz_comps, function(x) if (is.factor(x)) as.character(x) else {x})
@@ -154,14 +154,5 @@ for(i in seq(1:length(pts.SSls))){
 setwd("/home/tnaum/data/gSSURGO18/UCRB_gSSURGO18_mupolys_nasis")
 saveRDS(pts.SSls_df, "nasispts_gSSURGO18hor_ucrb.rds")
 
-## Cleanup to get all horizons into pts file
-pts_old <- readRDS("nasispts_gSSURGO18hor_ucrb.rds")
-pts_clean <- pts_old[c(1:8)]
-pts_new <- merge.data.frame(horiz_comps, pts_clean, by=cokey)
-saveRDS(pts_new, "nasispts_gSSURGO18hor_ucrb_final.rds")
-## Now combine with prior point covariate extraction
-pts_covars_old <- readRDS("UCRB_nasis_SSURGO_ART_SG100_covarsc.rds")
-pts_covars_old_clean <- pts_covars_old[c(2,290:495)] # Pull PID and covar columns
-pts_new_covars <- merge.data.frame(pts_new,pts_covars_old_clean,by='pid')
-saveRDS(pts_new_covars,"UCRB_nasis_SSURGO_ART_SG100_covarsc_final.rds")
+
 
