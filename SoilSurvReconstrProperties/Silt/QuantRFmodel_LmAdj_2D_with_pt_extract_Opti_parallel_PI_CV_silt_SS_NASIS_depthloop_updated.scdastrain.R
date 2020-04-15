@@ -5,7 +5,7 @@
 ## Cross Validation
 ## Most steps parallelized
 ######################
-## Sodium adsorption ratio
+## Silt content
 
 
 # Workspace setup
@@ -22,7 +22,7 @@ rasterOptions(maxmemory = 1e+09, chunksize = 1e+08)
 
 
 ## Key Folder Locations
-predfolder <- "/home/tnaum/data/BLMsoils/SAR_2D_SSURGO_NASIS_SCD"
+predfolder <- "/home/tnaum/data/BLMsoils/Silt_2D_SSURGO_NASIS_SCD"
 covfolder <- "/home/tnaum/data/UCRB_Covariates"
 
 ######## Get points for extraction if in table form ###########
@@ -83,12 +83,12 @@ saveRDS(pts.ext, "UCRB_nasis_SSURGO_ART_SG100_covarsc_final.rds")
 # pts.ext <- readRDS("/home/tnaum/data/gSSURGO18/UCRB_gSSURGO18_mupolys_nasis/UCRB_nasis_SSURGO_ART_SG100_covarsc_final.rds")
 
 ## Prep nasis training data for Random Forest
-pts.ext$prop <- pts.ext$sar_r ## UPDATE EVERY TIME
-prop <- "sar_r" ## Dependent variable
+pts.ext$prop <- pts.ext$silttotal_r ## UPDATE EVERY TIME
+prop <- "silttotal_r" ## Dependent variable
 pts.ext$tid <- "nasis"
 
 ## Remove lab pedons from nasis data to allow for evaluation at end
-scd.pts <- read.delim("/media/tnaum/D/GIS_Archive/NRCS_pedons/NCSS_Soil_Characterization_Database20170718/NCSS_Soil_Characterization_Database_05_17_2017_FGDB/NCSS17_salt_ttab.txt")
+scd.pts <- read.delim("/media/tnaum/D/GIS_Archive/NRCS_pedons/NCSS_Soil_Characterization_Database20170718/NCSS_Soil_Characterization_Database_05_17_2017_FGDB/NCSS17_PSDA_rkFrags_ttab.txt")
 pts.ext$LocID <- paste(pts.ext$xwgs84, pts.ext$ywgs84, sep = "")
 nasislocs <- unique(pts.ext$LocID)
 scd.pts$LocID <- paste(scd.pts$longitude_decimal_degrees, scd.pts$latitude_decimal_degrees, sep = "")
@@ -139,7 +139,7 @@ saveRDS(scd.pts.ext, paste("SCD", prop, "extracted_nasisSSURGO_ART_SG100.rds",se
 pred.pts.ext <- readRDS("/home/tnaum/data/BLMsoils/UCRB_Summary_pts/UCRB_predpts_ART_SG100_covarsc.rds") ## prediction summary locations
 
 ## SCD prep for RF
-scd.pts.ext$prop <- scd.pts.ext$sar ## UPDATE everytime!
+scd.pts.ext$prop <- scd.pts.ext$silt_tot_psa ## UPDATE everytime!
 scd.pts.ext$tid <- "scd"
 
 ##### Loop to train and predict properties for all depths
@@ -444,7 +444,7 @@ writeRaster(mask, overwrite=TRUE,filename="/home/tnaum/data/BLMsoils/nlcd_waterm
 rm(mask)
 ## Now set up a list of rasters and function to mask out water
 rasterOptions(maxmemory = 1e+09,chunksize = 1e+08)
-setwd("/home/tnaum/data/BLMsoils/SAR_2D_SSURGO_NASIS_SCD")
+setwd("/home/tnaum/data/BLMsoils/Silt_2D_SSURGO_NASIS_SCD")
 grids <- list.files(pattern=".tif$")
 mskfn <- function(rast,mask){
   ind <- rast*mask
@@ -453,13 +453,13 @@ mskfn <- function(rast,mask){
 }
 ## par list apply fn
 watermask_fn <- function(g){
-  setwd("/home/tnaum/data/BLMsoils/SAR_2D_SSURGO_NASIS_SCD")
+  setwd("/home/tnaum/data/BLMsoils/Silt_2D_SSURGO_NASIS_SCD")
   rast <- raster(g)
   names(rast) <- "rast"
   setwd("/home/tnaum/data/BLMsoils")
   mask <- raster("/home/tnaum/data/BLMsoils/nlcd_watermask.tif")
   h2ostk <- stack(rast,mask)
-  setwd("/home/tnaum/data/BLMsoils/SAR_2D_SSURGO_NASIS_SCD/masked")
+  setwd("/home/tnaum/data/BLMsoils/Silt_2D_SSURGO_NASIS_SCD/masked")
   overlay(h2ostk,fun=mskfn,progress='text',filename=g, options=c("COMPRESS=DEFLATE", "TFW=YES"))
   gc()
 }
