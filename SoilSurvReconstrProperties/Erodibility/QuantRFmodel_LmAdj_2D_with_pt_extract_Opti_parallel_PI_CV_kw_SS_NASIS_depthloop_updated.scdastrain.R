@@ -27,7 +27,7 @@ rasterOptions(maxmemory = 1e+09, chunksize = 1e+08)
 predfolder <- "/home/tnaum/data/BLMsoils/kw_2D_SSURGO_NASIS_SCD"
 covfolder <- "/home/tnaum/data/UCRB_Covariates"
 
-######## Get points for extraction if in table form ###########
+######## Get NASIS points for extraction if in table form ###########
 setwd("/home/tnaum/data/gSSURGO18/UCRB_gSSURGO18_mupolys_nasis")
 pts <- readRDS("nasispts_gSSURGO18hor_ucrb_final.rds")
  ### Weed out points with imprecise coordinates ###
