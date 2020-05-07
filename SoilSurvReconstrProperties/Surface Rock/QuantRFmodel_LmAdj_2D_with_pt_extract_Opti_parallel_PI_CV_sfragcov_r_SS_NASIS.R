@@ -140,10 +140,10 @@ pts.extc$trainpredsadj <- predict(rf_lm_adj, newdata=pts.extc)
 setwd(modelfolder)
 saveRDS(Qsoiclass, paste("Qsoiclass_RFmodel", prop, "cm_nasisSSURGO_ART_SG100.rds",sep="_"))
 saveRDS(rf_lm_adj, paste("rflmadj_RFmodel",prop,  "cm_nasisSSURGO_ART_SG100.rds",sep="_"))
-# Qsoiclass <- readRDS(paste("Qsoiclass_RFmodel", prop,  "cm_nasisSSURGO_ART_SG100.rds",sep="_"))
-# soiclass <- Qsoiclass
-# class(soiclass) <- "randomForest"
-# rf_lm_adj <- readRDS(paste("rflmadj_RFmodel",prop,  "cm_nasisSSURGO_ART_SG100.rds",sep="_"))
+Qsoiclass <- readRDS(paste("Qsoiclass_RFmodel", prop,  "cm_nasisSSURGO_ART_SG100.rds",sep="_"))
+soiclass <- Qsoiclass
+class(soiclass) <- "randomForest"
+rf_lm_adj <- readRDS(paste("rflmadj_RFmodel",prop,  "cm_nasisSSURGO_ART_SG100.rds",sep="_"))
 
 
 ## Reference covar rasters to use in prediction
@@ -156,7 +156,7 @@ rasters <- stack(cov.grids)
 ## Predict onto covariate grid
 setwd(predfolder)
 ## Parallelized predict
-beginCluster(60,type='SOCK')
+beginCluster(63,type='SOCK')
 Sys.time()
 pred <- clusterR(rasters, predict, args=list(model=soiclass),progress="text")
 Sys.time()
@@ -308,7 +308,7 @@ lapply(required.packages, require, character.only=T)
 rm(required.packages, new.packages)
 pred.pts.extdf <- as.data.frame(pred.pts.ext)
 pred.pts.extdf <- na.omit(pred.pts.extdf)
-num_splits <- 30 # number of cpus to use
+num_splits <- 63 # number of cpus to use
 cl <- makeCluster(num_splits)
 registerDoSNOW(cl)
 DF_pred_l<-
@@ -349,28 +349,28 @@ detach(package:doSNOW)
 detach(package:foreach)
 detach(package:itertools)
 # Save table to folder
-setwd(predfolder)
+setwd(modelfolder)
 write.table(PIdf, paste("relPI", prop, "nasisSSURGO_ART_SG100.txt",sep="_"), sep = "\t", row.names = FALSE)
 gc()
 
 
 
 ############# Masking water pixels out ############
-nlcd <- raster("/home/tnaum/data/UCRB_Covariates/NLCDcl.tif")
-beginCluster(30,type='SOCK')
+# nlcd <- raster("/home/tnaum/data/UCRB_Covariates/NLCDcl.tif")
+# beginCluster(30,type='SOCK')
 # Make a mask raster
-mask_fn <- function(nlcd){ind <- ifelse(nlcd!=11,1,NA)
-  return(ind)
-}
-mask <- clusterR(nlcd, calc, args=list(fun=mask_fn),progress='text')
-endCluster()
-plot(mask)
-writeRaster(mask, overwrite=TRUE,filename="/home/tnaum/data/BLMsoils/nlcd_watermask.tif", options=c("COMPRESS=DEFLATE", "TFW=YES"), progress="text",datatype='INT1U')
-rm(mask)
+# mask_fn <- function(nlcd){ind <- ifelse(nlcd!=11,1,NA)
+#   return(ind)
+# }
+# mask <- clusterR(nlcd, calc, args=list(fun=mask_fn),progress='text')
+# endCluster()
+# plot(mask)
+# writeRaster(mask, overwrite=TRUE,filename="/home/tnaum/data/BLMsoils/nlcd_watermask.tif", options=c("COMPRESS=DEFLATE", "TFW=YES"), progress="text",datatype='INT1U')
+# rm(mask)
 ## Now set up a list of rasters and function to mask out water
-rasterOptions(maxmemory = 1e+09,chunksize = 1e+08)
-setwd("/home/tnaum/data/BLMsoils/Surf_Frags_SSURGO_NASIS")
-grids <- list.files(pattern="cov"&".tif$")
+rasterOptions(maxmemory = 5e+09,chunksize = 5e+08)
+setwd(predfolder)
+grids <- list.files(pattern=".tif$")
 mskfn <- function(rast,mask){
   ind <- rast*mask
   ind[ind<0]<-0 # to bring the slighly negative predictions back to zero
@@ -378,18 +378,18 @@ mskfn <- function(rast,mask){
 }
 ## par list apply fn
 watermask_fn <- function(g){
-  setwd("/home/tnaum/data/BLMsoils/Surf_Frags_SSURGO_NASIS")
+  setwd(predfolder)
   rast <- raster(g)
   names(rast) <- "rast"
-  setwd("/home/tnaum/data/BLMsoils")
-  mask <- raster("/home/tnaum/data/BLMsoils/nlcd_watermask.tif")
+  # setwd("/home/tnaum/data/BLMsoils")
+  mask <- raster("/ped/SensitiveSoils/Data/models/NASIS_SCD_based/nlcd_watermask.tif")
   h2ostk <- stack(rast,mask)
-  setwd("/home/tnaum/data/BLMsoils/Surf_Frags_SSURGO_NASIS/masked")
+  setwd(paste(predfolder,"/masked",sep=""))
   overlay(h2ostk,fun=mskfn,progress='text',filename=g, options=c("COMPRESS=DEFLATE", "TFW=YES"))
   gc()
 }
 snowfall::sfInit(parallel=TRUE, cpus=4)
-snowfall::sfExport("watermask_fn","mskfn","grids")
+snowfall::sfExport("watermask_fn","mskfn","grids","predfolder")
 snowfall::sfLibrary(raster)
 Sys.time()
 snowfall::sfLapply(grids, function(g){watermask_fn(g)})
