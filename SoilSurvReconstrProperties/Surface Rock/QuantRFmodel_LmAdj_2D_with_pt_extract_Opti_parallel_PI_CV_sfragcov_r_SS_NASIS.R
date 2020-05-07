@@ -3,35 +3,34 @@
 ## Extraction of covariates to points
 ## Prediction interval creation
 ## Cross Validation
-## Most steps parallelized
+## Important steps parallelized
 ######################
 ## Surface rock cover
 
-
 # Workspace setup
 # Install packages if not already installed
-
-required.packages <- c("raster", "sp", "rgdal", "randomForest", "snow", "snowfall", "quantregForest","dplyr", "ggplot2","hexbin")# might need snowfall
+required.packages <- c("raster", "sp", "rgdal", "randomForest", "snow", "snowfall", "quantregForest","plyr","dplyr", "ggplot2","hexbin","sf")# might need snowfall
 new.packages <- required.packages[!(required.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 lapply(required.packages, require, character.only=T)
 rm(required.packages, new.packages)
 ## Increase actuve memory useable by raster package: Windows only
 memory.limit(500000)
-rasterOptions(maxmemory = 1e+09, chunksize = 1e+08)
-
+rasterOptions(maxmemory = 5e+09, chunksize = 5e+08, memfrac = 0.9)
 
 ## Key Folder Locations
-predfolder <- "/home/tnaum/data/BLMsoils/Surf_Frags_SSURGO_NASIS"
+predfolder <- "/ped/SensitiveSoils/Data/models/NASIS_SCD_based/Surf_Frags_SSURGO_NASIS"
+modelfolder <- "/ped/SensitiveSoils/Data/models/git_PSM/Predictive-Soil-Mapping/SoilSurvReconstrProperties/Surface Rock"
 covfolder <- "/home/tnaum/data/UCRB_Covariates"
+ssurgo_fgdb <- "/ped/GIS_Archive/gSSURGO18/gSSURGO_CONUS.gdb/gSSURGO_CONUS.gdb"
 
 ######## Get points for extraction if in table form ###########
-setwd("/home/tnaum/data/gSSURGO18/ESGs_Restr_SurfFrags_gSSURGO18_NASIS/SurfFrags")
-pts <- readRDS("UCRB_surfFrags_NASIS_SSURGO18.rds")
+setwd("/ped/GIS_Archive/gSSURGO18/UCRB_gSSURGO18_mupolys_nasis")
+pts <- readRDS("nasispts_gSSURGO18hor_ucrb_final.rds")
 ### Weed out points with imprecise coordinates ###
-pts$latnchar = nchar(abs(pts$ywgs84))
-pts$longnchar = nchar(abs(pts$xwgs84))
-ptsc = subset(pts, pts$latnchar > 5 & pts$longnchar > 6)
+pts$latnchar <- nchar(abs(pts$ywgs84))
+pts$longnchar <- nchar(abs(pts$xwgs84))
+ptsc <- subset(pts, pts$latnchar > 5 & pts$longnchar > 6)
 ### Turn into spatial file
 shp.pts <- ptsc
 coordinates(shp.pts) <- ~ xwgs84 + ywgs84
@@ -39,11 +38,11 @@ temp.proj <- CRS("+proj=longlat +datum=WGS84") ## specify projection
 projection(shp.pts) <- temp.proj
 
 ######## Load map clip boundary (if needed) ###########
-setwd("/home/tnaum/Dropbox/USGS/BLM_projects/Utah_BLM_Salinity/Huc6_boundary")
+setwd("/home/tnaum/OneDrive/USGS/BLM_projects/Utah_BLM_Salinity/Huc6_boundary")
 polybound <- readOGR(".", "CO_River_watershed_Meade_alb")
 polybound <- spTransform(polybound, temp.proj)
 # Now clip points and check with visualization
-shp.pts = shp.pts[polybound,]#clip by outer extent of all polybound features
+shp.pts <- shp.pts[polybound,]#clip by outer extent of all polybound features
 plot(polybound)
 plot(shp.pts, add=TRUE)
 
@@ -77,21 +76,32 @@ shp.pts$DID <- seq.int(nrow(shp.pts))
 pts.ext <- merge(as.data.frame(shp.pts),ov.lst, by="DID")
 
 ## Save points
-setwd(predfolder)
-saveRDS(pts.ext, "UCRB_surfFrags_NASIS_SSURGO18_ART_SG100_covs.rds")
+setwd("/ped/GIS_Archive/gSSURGO18/UCRB_gSSURGO18_mupolys_nasis")
+# saveRDS(pts.ext, "UCRB_nasis_SSURGO_ART_SG100_covarsc_final.rds")
 ## Or use pre-prepared table
-# pts.ext <- readRDS("/home/tnaum/data/gSSURGO18/ESGs_Restr_SurfFrags_gSSURGO18_NASIS/SurfFrags/UCRB_surfFrags_NASIS_SSURGO18_ART_SG100_covs.rds")
+pts.ext <- readRDS("UCRB_nasis_SSURGO_ART_SG100_covarsc_final.rds")
+## Narrow down to just one record per pedon
+pts.ext <- subset(pts.ext, !duplicated(pts.ext[c("pid")]))
+## Now bring in surface fragments SSURGO table and summarize for each pedon
+sfrag.df <- sf::st_read(dsn = ssurgo_fgdb, layer = "cosurffrags")
+sfrag.df[] <- lapply(sfrag.df, function(x) if (is.factor(x)) as.character(x) else {x}) # Factors to char
+cokeys <- unique(pts.ext$cokey)
+sfrag.df <- sfrag.df[sfrag.df$cokey %in% cokeys,]
+sfrags_cokey <- ddply(sfrag.df,~cokey,summarise,sfragcov_r = sum(sfragcov_r))
+pts.ext <- left_join(pts.ext,sfrags_cokey,by="cokey")
+pts.ext$sfragcov_r <- ifelse(is.na(pts.ext$sfragcov_r), 0, pts.ext$sfragcov_r) # Fill in 0s for sites with NAs (by SSURGO definitions)
+pts.ext$sfragcov_r <- ifelse(pts.ext$sfragcov_r>100, 100, pts.ext$sfragcov_r) # Some sites had values >100 (max 107 - not possible)
 
 ## Prep nasis training data for Random Forest
 pts.ext$prop <- pts.ext$sfragcov_r ## UPDATE EVERY TIME
 prop <- "sfragcov_r" ## Dependent variable
 pts.ext$tid <- "nasis"
-pts.ext$LocID <- paste(pts.ext$xwgs84.x, pts.ext$ywgs84.y, sep = "")
+pts.ext$LocID <- paste(pts.ext$xwgs84, pts.ext$ywgs84, sep = "")
 nasislocs <- unique(pts.ext$LocID)
 polybound <- spTransform(polybound, CRS(cov.proj))
 
 ## Raster Sample locations for RelPI stats
-pred.pts.ext <- readRDS("/home/tnaum/data/BLMsoils/UCRB_Summary_pts/UCRB_predpts_ART_SG100_covarsc.rds") ## prediction summary locations
+pred.pts.ext <- readRDS("/ped/SensitiveSoils/Data/models/NASIS_SCD_based/UCRB_Summary_pts/UCRB_predpts_ART_SG100_covarsc.rds") ## prediction summary locations
 
 ## Prep for random forest
 pts.extc <- subset(pts.ext, !duplicated(pts.ext[c("LocID")])) #removes duplicates
@@ -105,7 +115,7 @@ ytrain <- c(as.matrix(pts.extc[c("prop")]))
 # sqrtytrain <- sqrt(ytrain)
 
 ############### Build quantile Random Forest
-Qsoiclass <- quantregForest(x=xtrain, y=ytrain, importance=TRUE, ntree=100, keep.forest=TRUE, nthreads = 30)
+Qsoiclass <- quantregForest(x=xtrain, y=ytrain, importance=TRUE, ntree=100, keep.forest=TRUE, nthreads = 60)
 #soiclass = randomForest(ec_12pre ~ ., data = ptsc, importance=TRUE, proximity=FALSE, ntree=100, keep.forest=TRUE)
 soiclass <- Qsoiclass
 class(soiclass) <- "randomForest"
@@ -127,7 +137,7 @@ pts.extc$trainpredsadj <- predict(rf_lm_adj, newdata=pts.extc)
 # plot(ytrain~pts.extc$trainpredsadj) #Fit plot
 # lines(x1,y1, col = 'red')#1:1 line
 # varImpPlot(soiclass)
-setwd(predfolder)
+setwd(modelfolder)
 saveRDS(Qsoiclass, paste("Qsoiclass_RFmodel", prop, "cm_nasisSSURGO_ART_SG100.rds",sep="_"))
 saveRDS(rf_lm_adj, paste("rflmadj_RFmodel",prop,  "cm_nasisSSURGO_ART_SG100.rds",sep="_"))
 # Qsoiclass <- readRDS(paste("Qsoiclass_RFmodel", prop,  "cm_nasisSSURGO_ART_SG100.rds",sep="_"))
@@ -138,7 +148,7 @@ saveRDS(rf_lm_adj, paste("rflmadj_RFmodel",prop,  "cm_nasisSSURGO_ART_SG100.rds"
 
 ## Reference covar rasters to use in prediction
 setwd(covfolder)
-rasterOptions(maxmemory = 1e+09,chunksize = 2.5e+08)# maxmemory = 1e+09,chunksize = 1e+08 for soilmonster
+rasterOptions(maxmemory = 5e+09, chunksize = 5e+08)# maxmemory = 1e+09,chunksize = 1e+08 for soilmonster
 rasters <- stack(cov.grids)
 #rasters = setMinMax(brick(rasters))
 #names(rasters)
@@ -146,12 +156,12 @@ rasters <- stack(cov.grids)
 ## Predict onto covariate grid
 setwd(predfolder)
 ## Parallelized predict
-beginCluster(30,type='SOCK')
-predl <- clusterR(rasters, predict, args=list(model=Qsoiclass,what=c(0.025)),progress="text")
-predh <- clusterR(rasters, predict, args=list(model=Qsoiclass,what=c(0.975)),progress="text")
+beginCluster(60,type='SOCK')
 Sys.time()
 pred <- clusterR(rasters, predict, args=list(model=soiclass),progress="text")
 Sys.time()
+predl <- clusterR(rasters, predict, args=list(model=Qsoiclass,what=c(0.025)),progress="text")
+predh <- clusterR(rasters, predict, args=list(model=Qsoiclass,what=c(0.975)),progress="text")
 names(pred) <- "trainpreds"
 ## Linear Adjustment
 predlm <- clusterR(pred, predict, args=list(model=rf_lm_adj),progress="text")
@@ -269,8 +279,9 @@ PICP <- sum(ifelse(pts.extpcv$prop_bt <= pts.extpcv$pcvpredpre.975_bt & pts.extp
 ## Create PCV table
 CVdf <- data.frame(cvp.RMSE, cvp.Rsquared, cvp.RMSE_bt, cvp.Rsquared_bt, RPI.cvave,RPI.cvmed,PICP,rel.abs.res.ave,rel.abs.res.med,BTbias.abs.max,BTbias.ave)
 names(CVdf) <- c("cvp.RMSE","cvp.Rsquared","cvp.RMSE_bt", "cvp.Rsquared_bt", "RPI.CVave","RPI.CVmed","PICP","rel.abs.res.ave","rel.abs.res.med","BTbias.abs.max","BTbias.ave")
-setwd(predfolder)
-write.table(CVdf, paste("PCVstats", prop, "nasisSSURGO_ART_SG100.txt",sep="_"), sep = "\t", row.names = FALSE)
+setwd(modelfolder)
+## Model Specific metrics (if desired)
+# write.table(CVdf, paste("PCVstats", prop, "nasisSSURGO_ART_SG100.txt",sep="_"), sep = "\t", row.names = FALSE)
 # plot(pts.extpcv$prop~pts.extpcv$pcvpred_bt)
 # plot(pts.extpcv$prop~pts.extpcv$pcvpred_bt, xlim=c(0,10),ylim=c(0,10))
 # plot(pts.extpcv$prop~pts.extpcv$pcvpred_bt, xlim=c(0,5),ylim=c(0,5))
