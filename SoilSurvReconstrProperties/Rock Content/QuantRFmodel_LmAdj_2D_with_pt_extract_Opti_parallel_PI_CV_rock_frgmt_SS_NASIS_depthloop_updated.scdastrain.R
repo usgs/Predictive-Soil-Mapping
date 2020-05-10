@@ -10,23 +10,24 @@
 
 # Workspace setup
 # Install packages if not already installed
-
-required.packages <- c("raster", "sp", "rgdal", "randomForest", "snow", "snowfall", "quantregForest","dplyr", "ggplot2","hexbin")# might need snowfall
+required.packages <- c("raster", "sp", "rgdal", "randomForest", "snow", "snowfall", "quantregForest","plyr","dplyr", "ggplot2","hexbin","sf")# might need snowfall
 new.packages <- required.packages[!(required.packages %in% installed.packages()[,"Package"])]
 if(length(new.packages)) install.packages(new.packages)
 lapply(required.packages, require, character.only=T)
 rm(required.packages, new.packages)
 ## Increase actuve memory useable by raster package: Windows only
 memory.limit(500000)
-rasterOptions(maxmemory = 1e+09, chunksize = 1e+08)
+rasterOptions(maxmemory = 6e+09, chunksize = 5e+08)
 
 
 ## Key Folder Locations
-predfolder <- "/home/tnaum/data/BLMsoils/Rock_Frgmt_SSURGO_NASIS_SCD"
+predfolder <- "/ped/SensitiveSoils/Data/models/NASIS_SCD_based/Rock_Frgmt_SSURGO_NASIS_SCD"
+modelfolder <- "/ped/SensitiveSoils/Data/models/git_PSM/Predictive-Soil-Mapping/SoilSurvReconstrProperties/Rock Content"
 covfolder <- "/home/tnaum/data/UCRB_Covariates"
+ssurgo_fgdb <- "/ped/GIS_Archive/gSSURGO18/gSSURGO_CONUS.gdb/gSSURGO_CONUS.gdb"
 
 ######## Get points for extraction if in table form ###########
-setwd("/home/tnaum/data/gSSURGO18/UCRB_gSSURGO18_mupolys_nasis")
+setwd("/ped/GIS_Archive/gSSURGO18/UCRB_gSSURGO18_mupolys_nasis")
 pts <- readRDS("nasispts_gSSURGO18hor_ucrb_final.rds")
 ### Weed out points with imprecise coordinates ###
 pts$latnchar = nchar(abs(pts$ywgs84))
@@ -39,7 +40,7 @@ temp.proj <- CRS("+proj=longlat +datum=WGS84") ## specify projection
 projection(shp.pts) <- temp.proj
 
 ######## Load map clip boundary (if needed) ###########
-setwd("/home/tnaum/Dropbox/USGS/BLM_projects/Utah_BLM_Salinity/Huc6_boundary")
+setwd("/home/tnaum/OneDrive/USGS/BLM_projects/Utah_BLM_Salinity/Huc6_boundary")
 polybound <- readOGR(".", "CO_River_watershed_Meade_alb")
 polybound <- spTransform(polybound, temp.proj)
 # Now clip points and check with visualization
@@ -77,19 +78,24 @@ shp.pts$DID <- seq.int(nrow(shp.pts))
 pts.ext <- merge(as.data.frame(shp.pts),ov.lst, by="DID")
 
 ## Save points
-setwd(predfolder)
-saveRDS(pts.ext, "UCRB_nasis_SSURGO_ART_SG100_covarsc_final.rds")
+setwd("/ped/GIS_Archive/gSSURGO18/UCRB_gSSURGO18_mupolys_nasis")
+# saveRDS(pts.ext, "UCRB_nasis_SSURGO_ART_SG100_covarsc_final.rds")
 ## OR load Pre-prepared extract for UCRB
-# pts.ext <- readRDS("/home/tnaum/data/gSSURGO18/UCRB_gSSURGO18_mupolys_nasis/UCRB_nasis_SSURGO_ART_SG100_covarsc_final.rds")
+pts.ext <- readRDS("UCRB_nasis_SSURGO_ART_SG100_covarsc_final.rds")
 
 ## Rock fragement prep
 # Read in gdb with rgdal to get sp object
-fgdb <- "/home/tnaum/data/gSSURGO18/gSSURGO_CONUS.gdb"
-subset(ogrDrivers(), grepl("GDB", name))
-fc_list <- ogrListLayers(fgdb) # list layers
-setwd("/home/tnaum/data/gSSURGO18")
-chfrags <- sf::st_read(dsn = fgdb, layer = "chfrags")
-pts.ext <- merge(pts.ext,chfrags, by="chkey")
+# chfrags <- sf::st_read(dsn = ssurgo_fgdb, layer = "chfrags")
+# chfrags[] <- lapply(chfrags, function(x) if (is.factor(x)) as.character(x) else {x})
+# chkeys <- unique(pts.ext$chkey)
+# chfrags <- chfrags[chfrags$chkey %in% chkeys,]
+setwd(predfolder)
+# saveRDS(chfrags,"chfrags_ucrb.rds")
+chfrags <- readRDS("chfrags_ucrb.rds")
+## Sum together rock frag vols for all recorded rock sizes for each horizon
+frags_chkey <- ddply(chfrags,~chkey,summarise,fragvol_r = sum(fragvol_r))
+pts.ext <- left_join(pts.ext,frags_chkey,by="chkey")
+pts.ext$fragvol_r <- ifelse(is.na(pts.ext$fragvol_r), 0, pts.ext$fragvol_r)
 
 ## Prep nasis training data for Random Forest
 pts.ext$prop <- pts.ext$fragvol_r ## UPDATE EVERY TIME
@@ -97,7 +103,7 @@ prop <- "fragvol_r" ## Dependent variable
 pts.ext$tid <- "nasis"
 
 ## Remove lab pedons from nasis data to allow for evaluation at end
-scd.pts <- read.delim("/media/tnaum/D/GIS_Archive/NRCS_pedons/NCSS_Soil_Characterization_Database20170718/NCSS_Soil_Characterization_Database_05_17_2017_FGDB/NCSS17_suppl3_vol_fractions_ttab.txt")
+scd.pts <- read.delim("/ped/GIS_Archive/NCSS_Soil_Characterization_Database_2017/NCSS17_suppl3_vol_fractions_ttab.txt")
 pts.ext$LocID <- paste(pts.ext$xwgs84, pts.ext$ywgs84, sep = "")
 nasislocs <- unique(pts.ext$LocID)
 scd.pts$LocID <- paste(scd.pts$longitude_decimal_degrees, scd.pts$latitude_decimal_degrees, sep = "")
@@ -142,10 +148,10 @@ scd.pts.ext <- merge(as.data.frame(scd.pts),ov.lst, by="DID")
 setwd(predfolder)
 saveRDS(scd.pts.ext, paste("SCD", prop, "extracted_nasisSSURGO_ART_SG100.rds",sep="_"))
 ## Or load if pre-prepared
-# scd.pts.ext <- readRDS(paste("SCD", prop, "extracted_nasisSSURGO_ART_SG100.rds",sep="_"))
+scd.pts.ext <- readRDS(paste("SCD", prop, "extracted_nasisSSURGO_ART_SG100.rds",sep="_"))
 
 ## Raster Sample locations for RelPI stats
-pred.pts.ext <- readRDS("/home/tnaum/data/BLMsoils/UCRB_Summary_pts/UCRB_predpts_ART_SG100_covarsc.rds") ## prediction summary locations
+pred.pts.ext <- readRDS("/ped/SensitiveSoils/Data/models/NASIS_SCD_based/UCRB_Summary_pts/UCRB_predpts_ART_SG100_covarsc.rds") ## prediction summary locations
 
 ## SCD prep for RF
 scd.pts.ext$prop <- scd.pts.ext$vfg2 ## UPDATE everytime!
@@ -174,7 +180,7 @@ logytrain <- log(ytrain+1)
 varrange <- as.numeric(quantile(pts.extcc$prop, probs=c(0.975), na.rm=T)-quantile(pts.extcc$prop, probs=c(0.025),na.rm=T)) ## TRANSFORM IF NEEDED!
 
 ############### Build quantile Random Forest
-Qsoiclass <- quantregForest(x=xtrain, y=logytrain, importance=TRUE, ntree=100, keep.forest=TRUE, nthreads = 30)
+Qsoiclass <- quantregForest(x=xtrain, y=logytrain, importance=TRUE, ntree=100, keep.forest=TRUE, nthreads = 60)
 #soiclass = randomForest(ec_12pre ~ ., data = ptsc, importance=TRUE, proximity=FALSE, ntree=100, keep.forest=TRUE)
 soiclass <- Qsoiclass
 class(soiclass) <- "randomForest"
@@ -196,7 +202,7 @@ lines(x1,y1, col = 'red')#1:1 line
 # plot(ytrain~pts.extcc$trainpredsadj) #Fit plot
 # lines(x1,y1, col = 'red')#1:1 line
 # varImpPlot(soiclass)
-setwd(predfolder)
+setwd(modelfolder)
 saveRDS(Qsoiclass, paste("Qsoiclass_RFmodel", prop, d, "cm_nasisSSURGO_ART_SG100.rds",sep="_"))
 saveRDS(rf_lm_adj, paste("rflmadj_RFmodel",prop, d, "cm_nasisSSURGO_ART_SG100.rds",sep="_"))
 # Qsoiclass <- readRDS(paste("Qsoiclass_RFmodel", prop, d, "cm_nasisSSURGO_ART_SG100.rds",sep="_"))
@@ -205,10 +211,9 @@ saveRDS(rf_lm_adj, paste("rflmadj_RFmodel",prop, d, "cm_nasisSSURGO_ART_SG100.rd
 # rf_lm_adj <- readRDS(paste("rflmadj_RFmodel",prop, d, "cm_nasisSSURGO_ART_SG100.rds",sep="_"))
 
 
-
 ## Reference covar rasters to use in prediction
 setwd(covfolder)
-rasterOptions(maxmemory = 1e+09,chunksize = 2e+08)# maxmemory = 1e+09,chunksize = 1e+08 for soilmonster
+rasterOptions(maxmemory = 6e+09,chunksize = 5e+08)# maxmemory = 1e+09,chunksize = 1e+08 for soilmonster
 rasters=stack(cov.grids)
 #rasters = setMinMax(brick(rasters))
 #names(rasters)
@@ -216,8 +221,10 @@ rasters=stack(cov.grids)
 ## Predict onto covariate grid
 setwd(predfolder)
 ## Parallelized predict
-beginCluster(30,type='SOCK')
+beginCluster(63,type='SOCK')
+Sys.time()
 predl <- clusterR(rasters, predict, args=list(model=Qsoiclass,what=c(0.025)),progress="text")
+Sys.time()
 predh <- clusterR(rasters, predict, args=list(model=Qsoiclass,what=c(0.975)),progress="text")
 Sys.time()
 pred <- clusterR(rasters, predict, args=list(model=soiclass),progress="text")
@@ -226,19 +233,19 @@ names(pred) <- "trainpreds"
 ## Linear Adjustment
 predlm <- clusterR(pred, predict, args=list(model=rf_lm_adj),progress="text")
 ## PI widths
-s <- stack(predh,predl)
-PIwidth.fn <- function(a,b) {
-  ind <- a-b
-  return(ind)
-}
-#PIwidth <- clusterR(s, overlay, args=list(fun=PIwidth.fn),progress = "text")
-# Determine 95% interquantile range of original training data for horizons that include the depth being predicted
-PIrelwidth.fn <- function(a,b) {
-  ind <- (a-b)/varrange
-  return(ind)
-}
-#PIrelwidth <- clusterR(s, overlay, args=list(fun=PIrelwidth.fn),progress = "text",export='varrange')
-## Back transformation Stuff
+# s <- stack(predh,predl)
+# PIwidth.fn <- function(a,b) {
+#   ind <- a-b
+#   return(ind)
+# }
+# PIwidth <- clusterR(s, overlay, args=list(fun=PIwidth.fn),progress = "text")
+# # Determine 95% interquantile range of original training data for horizons that include the depth being predicted
+# PIrelwidth.fn <- function(a,b) {
+#   ind <- (a-b)/varrange
+#   return(ind)
+# }
+# PIrelwidth <- clusterR(s, overlay, args=list(fun=PIrelwidth.fn),progress = "text",export='varrange')
+## Back transformation Block
 bt.fn <- function(x) {
   ind <- (exp(x))-1 #If a backtransform is needed 10^(x) or exp(x) or ^2
   return(ind)
@@ -262,19 +269,18 @@ PIrelwidth_bt <- clusterR(s_bt, overlay, args=list(fun=PIrelwidth_bt.fn),progres
 endCluster()
 ## Write new geotiff files
 setwd(predfolder)
-# Untranformed code block
-writeRaster(predlm, overwrite=TRUE,filename=paste(prop,d,"cm_2D_QRF.tif",sep="_"), options=c("COMPRESS=DEFLATE", "TFW=YES"), progress="text")
-writeRaster(predl, overwrite=TRUE,filename=paste(prop,d,"cm_2D_QRF_95PI_l.tif",sep="_"), options=c("COMPRESS=DEFLATE", "TFW=YES"), progress="text")
-writeRaster(predh, overwrite=TRUE,filename=paste(prop,d,"cm_2D_QRF_95PI_h.tif",sep="_"), options=c("COMPRESS=DEFLATE", "TFW=YES"), progress="text")
-writeRaster(PIrelwidth, overwrite=TRUE,filename=paste(prop,d,"cm_2D_QRF_95PI_relwidth.tif",sep="_"), options=c("COMPRESS=DEFLATE", "TFW=YES"), progress="text")
-writeRaster(PIwidth, overwrite=TRUE,filename=paste(prop,d,"cm_2D_QRF_95PI_width.tif",sep="_"), options=c("COMPRESS=DEFLATE", "TFW=YES"), progress="text")
+## Untranformed code block
+# writeRaster(predlm, overwrite=TRUE,filename=paste(prop,d,"cm_2D_QRF.tif",sep="_"), options=c("COMPRESS=DEFLATE", "TFW=YES"), progress="text")
+# writeRaster(predl, overwrite=TRUE,filename=paste(prop,d,"cm_2D_QRF_95PI_l.tif",sep="_"), options=c("COMPRESS=DEFLATE", "TFW=YES"), progress="text")
+# writeRaster(predh, overwrite=TRUE,filename=paste(prop,d,"cm_2D_QRF_95PI_h.tif",sep="_"), options=c("COMPRESS=DEFLATE", "TFW=YES"), progress="text")
+# writeRaster(PIrelwidth, overwrite=TRUE,filename=paste(prop,d,"cm_2D_QRF_95PI_relwidth.tif",sep="_"), options=c("COMPRESS=DEFLATE", "TFW=YES"), progress="text")
+# writeRaster(PIwidth, overwrite=TRUE,filename=paste(prop,d,"cm_2D_QRF_95PI_width.tif",sep="_"), options=c("COMPRESS=DEFLATE", "TFW=YES"), progress="text")
 ## Transformed code block
 writeRaster(pred_bt, overwrite=TRUE,filename=paste(prop,d,"cm_2D_QRF_bt_ART_SG100covs_bt.tif",sep="_"), options=c("COMPRESS=DEFLATE", "TFW=YES"), progress="text")
 writeRaster(predl_bt, overwrite=TRUE,filename=paste(prop,d,"cm_2D_QRF_95PI_l_bt.tif",sep="_"), options=c("COMPRESS=DEFLATE", "TFW=YES"), progress="text")
 writeRaster(predh_bt, overwrite=TRUE,filename=paste(prop,d,"cm_2D_QRF_95PI_h_bt.tif",sep="_"), options=c("COMPRESS=DEFLATE", "TFW=YES"), progress="text")
-writeRaster(PIwidth_bt, overwrite=TRUE,filename=paste(prop,d,"cm_2D_QRF_95PI_width_bt.tif",sep="_"), options=c("COMPRESS=DEFLATE", "TFW=YES"), progress="text")
+#writeRaster(PIwidth_bt, overwrite=TRUE,filename=paste(prop,d,"cm_2D_QRF_95PI_width_bt.tif",sep="_"), options=c("COMPRESS=DEFLATE", "TFW=YES"), progress="text")
 writeRaster(PIrelwidth_bt, overwrite=TRUE,filename=paste(prop,d,"cm_2D_QRF_95PI_relwidth_bt.tif",sep="_"), options=c("COMPRESS=DEFLATE", "TFW=YES"), progress="text")
-
 
 
 ################### Manual Cross validation ################################
@@ -292,8 +298,8 @@ CV_factorRF <- function(g,pts.extcvm, formulaStringCVm){
   rf.pcv <- quantregForest(x=xtrain.t, y=ytrain.t, importance=TRUE, ntree=100, keep.forest=TRUE)
   rf.pcvc <- rf.pcv
   class(rf.pcvc) <- "randomForest"
-  traindf$pcvpredpre <- predict(rf.pcvc, newdata=traindf) 
-  testdf$pcvpredpre <- predict(rf.pcvc, newdata=testdf) 
+  traindf$pcvpredpre <- predict(rf.pcvc, newdata=traindf)
+  testdf$pcvpredpre <- predict(rf.pcvc, newdata=testdf)
   #traindf$pcvpredpre <- predict(rf.pcv, newdata=traindf, what=c(0.5)) ## If median is desired
   #testdf$pcvpredpre <- predict(rf.pcv, newdata=testdf,, what=c(0.5)) ## If median is desired
   testdf$pcvpredpre.025 <- predict(rf.pcv, newdata=testdf, what=c(0.025))
@@ -348,7 +354,7 @@ PICP <- sum(ifelse(pts.extpcv$prop_bt <= pts.extpcv$pcvpredpre.975_bt & pts.extp
 ## Create PCV table
 CVdf <- data.frame(cvp.RMSE, cvp.Rsquared, cvp.RMSE_bt, cvp.Rsquared_bt, cvp.RMSE.scd, cvp.Rsquared.scd, cvp.RMSE.scd_bt, cvp.Rsquared.scd_bt,n_scd,RPI.cvave,RPI.cvmed,PICP,rel.abs.res.ave,rel.abs.res.med,BTbias.abs.max,BTbias.ave)
 names(CVdf) <- c("cvp.RMSE","cvp.Rsquared","cvp.RMSE_bt", "cvp.Rsquared_bt", "cvp.RMSE.scd", "cvp.Rsquared.scd", "cvp.RMSE.scd_bt", "cvp.Rsquared.scd_bt","n_scd","RPI.CVave","RPI.CVmed","PICP","rel.abs.res.ave","rel.abs.res.med","BTbias.abs.max","BTbias.ave")
-setwd(predfolder)
+setwd(modelfolder)
 write.table(CVdf, paste("PCVstats", prop, d, "cm_nasisSSURGO_ART_SG100.txt",sep="_"), sep = "\t", row.names = FALSE)
 # plot(pts.extpcv$prop~pts.extpcv$pcvpred_bt)
 # plot(pts.extpcv$prop~pts.extpcv$pcvpred_bt, xlim=c(0,10),ylim=c(0,10))
@@ -378,7 +384,7 @@ pred.pts.extdf <- as.data.frame(pred.pts.ext)
 pred.pts.extdf <- na.omit(pred.pts.extdf)
 depthPI <- d
 relPI.depth <- function(d, pts.ext, pred.pts.extdf,Qsoiclass){
-  num_splits <- 30 # number of cpus to use
+  num_splits <- 60 # number of cpus to use
   cl <- makeCluster(num_splits)
   registerDoSNOW(cl)
   pred.pts.extdf$depth<-d
@@ -433,7 +439,7 @@ detach(package:doSNOW)
 detach(package:foreach)
 detach(package:itertools)
 # Save table to folder
-setwd(predfolder)
+setwd(modelfolder)
 write.table(relPI.df, paste("relPI", prop, d, "cm_nasisSSURGO_ART_SG100.txt",sep="_"), sep = "\t", row.names = FALSE)
 ## Print out loop status
 print(paste("Done with depth", d, sep=" "))
@@ -442,40 +448,41 @@ gc()
 
 
 ############# Masking water pixels out ############
-nlcd <- raster("/home/tnaum/data/UCRB_Covariates/NLCDcl.tif")
-beginCluster(30,type='SOCK')
-# Make a mask raster
-mask_fn <- function(nlcd){ind <- ifelse(nlcd!=11,1,NA)
-  return(ind)
-}
-mask <- clusterR(nlcd, calc, args=list(fun=mask_fn),progress='text')
-endCluster()
-plot(mask)
-writeRaster(mask, overwrite=TRUE,filename="/home/tnaum/data/BLMsoils/nlcd_watermask.tif", options=c("COMPRESS=DEFLATE", "TFW=YES"), progress="text",datatype='INT1U')
-rm(mask)
+# nlcd <- raster("/home/tnaum/data/UCRB_Covariates/NLCDcl.tif")
+# beginCluster(30,type='SOCK')
+# # Make a mask raster
+# mask_fn <- function(nlcd){ind <- ifelse(nlcd!=11,1,NA)
+#   return(ind)
+# }
+# mask <- clusterR(nlcd, calc, args=list(fun=mask_fn),progress='text')
+# endCluster()
+# plot(mask)
+# writeRaster(mask, overwrite=TRUE,filename="/home/tnaum/data/BLMsoils/nlcd_watermask.tif", options=c("COMPRESS=DEFLATE", "TFW=YES"), progress="text",datatype='INT1U')
+# rm(mask)
 ## Now set up a list of rasters and function to mask out water
-rasterOptions(maxmemory = 1e+09,chunksize = 1e+08)
-setwd("/home/tnaum/data/BLMsoils/Rock_Frgmt_SSURGO_NASIS_SCD")
+rasterOptions(maxmemory = 5e+09,chunksize = 5e+08)
+setwd(predfolder)
 grids <- list.files(pattern=".tif$")
 mskfn <- function(rast,mask){
   ind <- rast*mask
-  ind[ind<0]<-0 # to bring the slighly negative predictions back to zero
+  ind[ind<0]<-0 # to bring the slighly negative predictions back to zero (rare)
+  ind[ind>100]<-100 # Bring values >100 back to 100 (rare) 
   return(ind)
 }
 ## par list apply fn
 watermask_fn <- function(g){
-  setwd("/home/tnaum/data/BLMsoils/Rock_Frgmt_SSURGO_NASIS_SCD")
+  setwd(predfolder)
   rast <- raster(g)
   names(rast) <- "rast"
-  setwd("/home/tnaum/data/BLMsoils")
-  mask <- raster("/home/tnaum/data/BLMsoils/nlcd_watermask.tif")
+  # setwd("/home/tnaum/data/BLMsoils")
+  mask <- raster("/ped/SensitiveSoils/Data/models/NASIS_SCD_based/nlcd_watermask.tif")
   h2ostk <- stack(rast,mask)
-  setwd("/home/tnaum/data/BLMsoils/Rock_Frgmt_SSURGO_NASIS_SCD/masked")
+  setwd(paste(predfolder,"/masked",sep=""))
   overlay(h2ostk,fun=mskfn,progress='text',filename=g, options=c("COMPRESS=DEFLATE", "TFW=YES"))
   gc()
 }
 snowfall::sfInit(parallel=TRUE, cpus=30)
-snowfall::sfExport("watermask_fn","mskfn","grids")
+snowfall::sfExport("watermask_fn","mskfn","grids","predfolder")
 snowfall::sfLibrary(raster)
 Sys.time()
 snowfall::sfLapply(grids, function(g){watermask_fn(g)})
