@@ -1,0 +1,2 @@
+"cvp.RMSE"	"cvp.Rsquared"	"cvp.RMSE_bt"	"cvp.Rsquared_bt"	"cvp.RMSE.scd"	"cvp.Rsquared.scd"	"cvp.RMSE.scd_bt"	"cvp.Rsquared.scd_bt"	"n_scd"	"RPI.CVave"	"RPI.CVmed"	"PICP"	"rel.abs.res.ave"	"rel.abs.res.med"	"BTbias.abs.max"	"BTbias.ave"
+0.451015878063022	0.479606967279587	3.00463622211136	0.16169622298565	NA	NA	NA	NA	0	0.593303044036573	0.163376187521447	0.984375	0.102009726001482	0.00735807099992623	1.77635683940025e-15	2.08166817117217e-17
