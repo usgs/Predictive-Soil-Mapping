@@ -17,7 +17,7 @@ http://doi.org/10.5281/zenodo.2551849 - Depth to top of root or water soil restr
 
 http://doi.org/10.5281/zenodo.2551831 - Sodium adsorption ratio (sar) soil maps
 
-http://doi.org/10.5281/zenodo.2551240 - Soil rock fragment content (fragvol; % volume) soil maps
+http://doi.org/10.5281/zenodo.2551239 - Soil rock fragment content (fragvol; % volume) soil maps
 
 http://doi.org/10.5281/zenodo.2550935 - Organic matter content (om) soil maps (updated 12/23/19)
 
@@ -25,7 +25,7 @@ http://doi.org/10.5281/zenodo.2550912 - Gypsum content (gypsum) soil maps
 
 http://doi.org/10.5281/zenodo.2550895 - Soil salinity measured as electrical conductivity (ec, saturated paste method) soil maps
 
-http://doi.org/10.5281/zenodo.2550879 - Surface rock cover soil maps
+http://doi.org/10.5281/zenodo.2550878 - Surface rock cover soil maps
 
 http://doi.org/10.5281/zenodo.2550104 - Very fine sand content (sandvf) soil maps
 
