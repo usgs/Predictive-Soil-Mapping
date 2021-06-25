@@ -35,10 +35,15 @@ Figure 1. Flow chart showing the variety of data sources and analyses employed f
 
 ### Support
 Travis Nauman, PhD (he/him/his)
+
 Soil Scientist
+
 US Geological Survey
+
 Southwest Biological Science Center
+
 Moab, UT
+
 tnauman@usgs.gov
 
 
