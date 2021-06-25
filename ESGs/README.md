@@ -8,6 +8,6 @@ Please note that this software is preliminary or provisional and is subject to r
 
 ## Overview
 
-![plot](Fig1_FlowChart_white.tif?raw=true)
+![alt text](Fig1_FlowChart_white.tif?raw=true)
 
 https://github.com/usgs/Predictive-Soil-Mapping/blob/master/ESGs/Fig1_FlowChart_white.tif
