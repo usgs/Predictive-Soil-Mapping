@@ -665,8 +665,12 @@ trialsjn_sgu <- trialsjn[1:5,]
 
 # Soil Geomorph Units combinations to try
 SGUx <- seq(1,3)
-# Expert driven potential groupings of SGUs referencing SGUlevs
+# Expert driven potential pairings of SGUs allowed referencing SGUlevs
 sgucomblst <- c('1,2','1,3','1,4','2,3','2,4','2,5','3,4','3,5','4,5','4,6','4,7','5,6','5,7','5,8','5,9','6,7','7,8','8,12','8,9','9,10','9,12','10,11','12,13','12,14','13,14') # Other possible groupings: '1,3','1,5','8,10',
+# Combinations written out: Breaks-Saline Hills, Breaks-Gypsum, Breaks-Very Shallow, Saline Hills-Gypsum, Saline Hills-Very Shallow, Saline Hills-Saline Uplands, 
+#                           Gypsum-Very Shallow, Gypsum-Saline Uplands, Very Shallow-Saline Uplands, Very Shallow-Shallow, Very Shallow-Deep Rocky, Saline Uplands-Shallow, Saline Uplands-Deep Rocky, 
+#                           Saline Uplands-Sandy Uplands, Saline Uplands-Loamy Uplands, Shallow-Deep Rocky, Deep Rocky-Sandy Uplands, Sandy Uplands-Sandy Bottoms, Sandy Uplands-Loamy Uplands, 
+#                           Loamy Uplands-Finer Uplands, Loamy Uplands-Sandy Bottoms, Finer Uplands-Clay Uplands, Sandy Bottoms-Saline Bottoms, Sandy Bottoms-Bottoms, Saline Bottoms-Bottoms
 sgufun <- function(x){combn(sgucomblst,x,simplify = T)} ## factor version
 SGU.brks.all <- lapply(SGUx,FUN = sgufun)
 # Add endpoints and create indexable linear lists
