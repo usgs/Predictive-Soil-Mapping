@@ -18,3 +18,25 @@ Figure 1. Flow chart showing the variety of data sources and analyses employed f
 ### The SGU development
 [SGU_climate_PERMANOVA_SSURGO.r](https://github.com/usgs/Predictive-Soil-Mapping/blob/537f3b5e6d8628c13874e22dedc61f0c1f57a3b8/ESGs/SGU_climate_PERMANOVA_SSURGO.r)
 
+### Climate Optimization
+[ClimateOptimization_v2b_nested.R](https://github.com/usgs/Predictive-Soil-Mapping/blob/4184b3a8e6d3134b2c4807b92ac48111668f3435/ESGs/ClimateOptimization_v2b_nested.R)
+[ClimateOptimization_v1b_simultaneous.R](https://github.com/usgs/Predictive-Soil-Mapping/blob/4184b3a8e6d3134b2c4807b92ac48111668f3435/ESGs/ClimateOptimization_v1b_simultaneous.R)
+[ESG_STM_ClimateOptimization_b.R](https://github.com/usgs/Predictive-Soil-Mapping/blob/4184b3a8e6d3134b2c4807b92ac48111668f3435/ESGs/ESG_STM_ClimateOptimization_b.R)
+
+### Mapping SGUs and ESGs
+[Digital Soil Mapping of SGUs](https://github.com/usgs/Predictive-Soil-Mapping/blob/4184b3a8e6d3134b2c4807b92ac48111668f3435/ESGs/RFforeach_categor_with_pt_extract_Opti_parallel_rank123_ADJsmote_InfSp_sgu_30mINT.r)
+[sgu_to_esg.R](https://github.com/usgs/Predictive-Soil-Mapping/blob/4184b3a8e6d3134b2c4807b92ac48111668f3435/ESGs/sgu_to_esg.R)
+
+### Figures for publication and exploration
+[ESG_UCRB_figs_tabs.r](https://github.com/usgs/Predictive-Soil-Mapping/blob/4184b3a8e6d3134b2c4807b92ac48111668f3435/ESGs/ESG_UCRB_figs_tabs.r)
+
+### Support
+Travis Nauman, PhD (he/him/his)
+Soil Scientist
+US Geological Survey
+Southwest Biological Science Center
+Moab, UT
+tnauman@usgs.gov
+
+
+
