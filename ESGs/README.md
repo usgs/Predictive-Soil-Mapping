@@ -9,7 +9,7 @@ Please note that this software is preliminary or provisional and is subject to r
 ## Overview
 
 <p align="center">
-  <img src="./data/Fig_FlowChart_white_repo.png" width="350" title="Development Overview">
+  <img src="./data/Fig_FlowChart_white_repo.png" width="550" title="Development Overview">
 </p>
 
 
