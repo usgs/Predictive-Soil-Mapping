@@ -16,5 +16,5 @@ Figure 1. Flow chart showing the variety of data sources and analyses employed f
 ## Steps and associated scripts
 
 ### The SGU development
-SGU_climate_PERMANOVA_SSURGO.r(https://github.com/usgs/Predictive-Soil-Mapping/blob/537f3b5e6d8628c13874e22dedc61f0c1f57a3b8/ESGs/SGU_climate_PERMANOVA_SSURGO.r)
-!fig(./data/Fig_FlowChart_white_repo.png)
+[SGU_climate_PERMANOVA_SSURGO.r](https://github.com/usgs/Predictive-Soil-Mapping/blob/537f3b5e6d8628c13874e22dedc61f0c1f57a3b8/ESGs/SGU_climate_PERMANOVA_SSURGO.r)
+
